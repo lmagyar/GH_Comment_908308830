@@ -1,0 +1,66 @@
+
+# depends on the system package
+
+input_boolean:
+
+  virtual_heater:
+    name: Heater
+    icon: hass:fire
+
+template:
+  binary_sensor:
+
+    - name: Heater refresh is enabled
+      state: '{{ states("input_boolean.virtual_heater") != "off" or states("switch.heater") != "off" }}'
+      icon: hass:radiator-off
+
+homeassistant:
+  customize:
+
+    input_boolean.virtual_heater:
+      dependent: switch.heater
+      condition: binary_sensor.heater_refresh_is_enabled
+
+group:
+
+  all_virtual_actuators:
+    name: All virtual actuators
+    entities:
+      - input_boolean.virtual_heater
+
+  all_virtual_actuators_with_dependent_real_actuator:
+    name: All virtual actuators with dependent real actuator
+    entities:
+      - input_boolean.virtual_heater
+
+automation:
+
+  - alias: Copy each virtual actuator state to dependent actuator
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id:
+          # group.all_virtual_actuators
+          - input_boolean.virtual_heater
+    action:
+      - service: python_script.copy_state_to_dependent
+        data:
+          entity_id: '{{ trigger.entity_id }}'
+
+  - alias: Periodically copy each virtual actuator state to dependent real actuator when it is active
+    mode: restart
+    trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: automation_reloaded
+    action:
+      - repeat:
+          while: '{{ true }}'
+          sequence:
+            - service: python_script.copy_state_to_dependent
+              data:
+                forced: true
+                entity_id: '{{ expand("group.all_virtual_actuators_with_dependent_real_actuator") | map(attribute="entity_id") | join(", ") }}'
+            - delay:
+                seconds: 30

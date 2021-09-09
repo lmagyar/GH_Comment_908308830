@@ -1,0 +1,30 @@
+
+# depends on the sensors package
+# depends on the regulators package
+# depends on the actuators package
+
+template:
+  binary_sensor:
+
+    - name: System is active
+      state: '{{ is_state("group.all_regulators", "on") }}'
+      icon: hass:power
+
+homeassistant:
+  customize:
+    input_boolean.heater_thermostat_switch:
+      dependent: input_boolean.virtual_heater
+
+automation:
+
+  - alias: Copy each regulator switch state to dependent virtual actuator
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id:
+          # group.all_regulator_switches
+          - input_boolean.heater_thermostat_switch
+    action:
+      - service: python_script.copy_state_to_dependent
+        data:
+          entity_id: '{{ trigger.entity_id }}'

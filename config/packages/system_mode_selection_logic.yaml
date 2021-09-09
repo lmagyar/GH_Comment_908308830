@@ -1,0 +1,53 @@
+
+script:
+
+  turn_all_regulators_auto:
+    alias: "Auto all"
+    mode: queued
+    sequence:
+      - service: climate.set_preset_mode
+        data:
+          entity_id: climate.heater_thermostat
+          preset_mode: "none"
+
+  turn_regulation_on_by_entity_id:
+    alias: "On"
+    mode: queued
+    sequence:
+      - service: script.turn_all_regulators_auto
+      - service: homeassistant.turn_off
+        data:
+          entity_id: '{{ expand("group.all_regulators") | map(attribute="entity_id") | reject("eq", entity_id) | join(", ") }}'
+      - service: homeassistant.turn_on
+        data:
+          entity_id: '{{ entity_id }}'
+
+  turn_regulation_off:
+    alias: "Off"
+    icon: hass:power
+    mode: queued
+    sequence:
+      - service: homeassistant.turn_off
+        data:
+          entity_id: group.all_regulators
+      - service: script.turn_all_regulators_auto
+
+  turn_regulation_heat:
+    alias: "Heat"
+    icon: hass:fire
+    mode: queued
+    sequence:
+      - service: script.turn_regulation_on_by_entity_id
+        data:
+          entity_id: climate.heater_thermostat
+
+template:
+  binary_sensor:
+
+    - name: Regulation is off
+      state: '{{ is_state("group.all_regulators", "off") }}'
+      icon: hass:power
+
+    - name: Regulation is heat
+      state: '{{ is_state("climate.heater_thermostat", "heat") }}'
+      icon: hass:fire

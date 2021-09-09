@@ -1,0 +1,45 @@
+
+script:
+
+  turn_preset_auto:
+    alias: "Auto"
+    icon: hass:calendar-clock
+    mode: queued
+    sequence:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: climate.heater_thermostat
+                state: "heat"
+            sequence:
+              - service: climate.set_preset_mode
+                data:
+                  entity_id: climate.heater_thermostat
+                  preset_mode: "none"
+
+  turn_preset_away:
+    alias: "Away"
+    icon: hass:exit-run
+    mode: queued
+    sequence:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: climate.heater_thermostat
+                state: "heat"
+            sequence:
+              - service: climate.set_preset_mode
+                data:
+                  entity_id: climate.heater_thermostat
+                  preset_mode: "away"
+
+template:
+  binary_sensor:
+
+    - name: 'Preset is auto'
+      state: '{{ is_state("group.all_regulator_is_in_auto_preset_sensors", "on") }}'
+      icon: hass:calendar-clock
+
+    - name: 'Preset is away'
+      state: '{{ is_state("group.all_regulators_that_can_have_schedule", "on") and is_state("group.all_regulator_is_in_auto_preset_sensors", "off") }}'
+      icon: hass:exit-run

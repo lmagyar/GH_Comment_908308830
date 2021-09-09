@@ -1,0 +1,19 @@
+
+recorder:
+  db_url: !secret recorder_db_url
+  auto_purge: false
+  exclude:
+    event_types:
+      - call_service
+
+automation:
+  - alias: Auto purge with repack
+    mode: queued
+    trigger:
+      - platform: time
+        at: "04:12:00"
+    action:
+      - service: recorder.purge
+        data:
+          keep_days: 2
+          repack: true

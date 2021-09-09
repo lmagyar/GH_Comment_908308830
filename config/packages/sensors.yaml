@@ -1,0 +1,22 @@
+
+sensor:
+
+  - platform: average
+    name: 'Living room temperature average for heater'
+    entities:
+      - sensor.living_room_temperature
+    duration:
+      minutes: 1
+    precision: 1
+    process_undef_as: 25.0
+
+homeassistant:
+  customize:
+    sensor.living_room_temperature_average_for_heater:
+      icon: hass:thermometer
+
+recorder:
+  include:
+    entities:
+      - sensor.living_room_temperature # needed for the average sensor
+      - sensor.living_room_temperature_average_for_heater

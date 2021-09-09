@@ -1,0 +1,7 @@
+
+recorder:
+  include:
+    entities:
+      - sensor.living_room_ip
+      - sensor.living_room_last_restart_time
+      - sensor.living_room_restart_reason

@@ -1,0 +1,85 @@
+
+# depends on the regulators package
+
+input_select:
+  schedule_preset:
+    name: Schedule preset
+    icon: hass:calendar-clock
+    options:
+      - "Default"
+
+input_text:
+  previous_schedule_preset:
+    name: Previous schedule preset
+    icon: hass:calendar-clock
+
+homeassistant:
+  customize:
+    binary_sensor.heater_thermostat_is_in_auto_preset:
+      dependent: group.heater_thermostat_schedules
+
+automation:
+
+  - alias: Recalculate the schedule related informations
+    mode: restart
+    trigger:
+      - platform: homeassistant
+        event: start
+      - platform: event
+        event_type: entity_registry_updated
+    action:
+      - service: automation.turn_off
+        data:
+          entity_id:
+            - automation.enable_schedules_based_on_regulator_preset
+            - automation.enable_schedules_based_on_schedule_preset
+      - service: python_script.remove_all_groups
+      - service: python_script.set_regulator_schedules_group_per_all_regulators
+      - service: python_script.collect_all_regulator_schedule_presets
+        data:
+          entity_id: input_select.schedule_preset
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: '{{ trigger.platform == "homeassistant" }}'
+            sequence:
+              - service: input_select.select_option
+                data:
+                  entity_id: input_select.schedule_preset
+                  option: '{{ states("input_text.previous_schedule_preset") }}'
+      - service: automation.turn_on
+        data:
+          entity_id:
+            - automation.enable_schedules_based_on_regulator_preset
+            - automation.enable_schedules_based_on_schedule_preset
+      - service: automation.trigger
+        data:
+          entity_id: automation.enable_schedules_based_on_schedule_preset
+
+  - alias: Enable schedules based on regulator preset
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id:
+          # group.all_regulator_is_in_auto_preset_sensors
+          - binary_sensor.heater_thermostat_is_in_auto_preset
+    action:
+      - service: python_script.copy_state_to_dependent_schedules
+        data:
+          preset: '{{ states("input_select.schedule_preset") }}'
+          entity_id: '{{ trigger.entity_id }}'
+
+  - alias : Enable schedules based on schedule preset
+    mode: queued
+    trigger:
+      - platform: state
+        entity_id: input_select.schedule_preset
+    action:
+      - service: python_script.copy_state_to_dependent_schedules
+        data:
+          preset: '{{ states("input_select.schedule_preset") }}'
+          entity_id: '{{ expand("group.all_regulator_is_in_auto_preset_sensors") | map(attribute="entity_id") | join(", ") }}'
+      - service: input_text.set_value
+        data:
+          entity_id: input_text.previous_schedule_preset
+          value: '{{ states("input_select.schedule_preset") }}'

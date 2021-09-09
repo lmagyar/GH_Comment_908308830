@@ -1,0 +1,32 @@
+
+automation:
+
+  - alias: Force switch update of the regulator that became active or was active during startup
+    mode: queued
+    trigger:
+      - platform: homeassistant
+        event: start
+      - platform: state
+        entity_id:
+          # group.all_regulators
+          - climate.heater_thermostat
+        from: "off"
+    action:
+      - delay:
+          seconds: 1
+      - choose:
+          # do not use automation condition, they are evaluated before group state recalculation
+        - conditions:
+            - condition: state
+              entity_id: binary_sensor.system_is_active
+              state: "on"
+          sequence:
+            - variables:
+                regulator_switch: '{{ state_attr(expand("group.all_regulators") | selectattr("state", "!=", "off") | map(attribute="entity_id") | first, "dependent") }}'
+            - service: python_script.copy_state_to_dependent
+              data:
+                forced: true
+                entity_id: '{{ regulator_switch }}'
+            - event: regulator_switch_reevaluated
+              event_data:
+                entity_id: '{{ regulator_switch }}'

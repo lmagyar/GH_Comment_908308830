@@ -1,0 +1,16 @@
+
+automation:
+
+  - alias: Force actuator update of the regulator switch that became active or was active during startup
+    mode: queued
+    trigger:
+      - platform: event
+        event_type: regulator_switch_reevaluated
+    action:
+      - variables:
+          regulator_switch: '{{ trigger.event.data.entity_id }}'
+          virtual_actuator: '{{ state_attr(regulator_switch, "reevaluate") | default(state_attr(regulator_switch, "dependent"), true) }}'
+      - service: python_script.copy_state_to_dependent
+        data_template:
+          forced: true
+          entity_id: '{{ virtual_actuator }}'

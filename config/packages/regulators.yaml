@@ -1,0 +1,71 @@
+
+# depends on the sensors package
+
+climate:
+
+  - platform: generic_thermostat
+    name: Heater thermostat
+    heater: input_boolean.heater_thermostat_switch
+    target_sensor: sensor.living_room_temperature_average_for_heater
+    min_temp: 5
+    max_temp: 30
+    ac_mode: false
+    cold_tolerance: 0.2
+    hot_tolerance: 0.2
+    min_cycle_duration:
+      seconds: 10
+    away_temp: 18
+    precision: 0.1
+
+input_boolean:
+
+  heater_thermostat_switch:
+    name: Heater thermostat switch
+    icon: hass:fire
+
+homeassistant:
+  customize:
+    climate.heater_thermostat:
+      icon: hass:fire
+      dependent: input_boolean.heater_thermostat_switch
+
+template:
+  binary_sensor:
+
+    - name: 'Heater thermostat is in auto preset'
+      state: '{{ is_state("climate.heater_thermostat", "heat") and is_state_attr("climate.heater_thermostat", "preset_mode", "none") }}'
+      icon: hass:fire-alert
+
+group:
+
+  all_regulators:
+    name: All regulators
+    icon: hass:power
+    entities:
+      - climate.heater_thermostat
+
+  all_regulators_that_can_have_schedule:
+    name: All regulators that can have schedule
+    icon: hass:power
+    entities:
+      - climate.heater_thermostat
+
+  all_regulator_switches:
+    name: All regulator switches
+    icon: hass:power
+    entities:
+      - input_boolean.heater_thermostat_switch
+
+  all_regulator_is_in_auto_preset_sensors:
+    name: All regulator is in auto preset sensors
+    icon: hass:calendar-clock
+    entities:
+      - binary_sensor.heater_thermostat_is_in_auto_preset
+
+recorder:
+  include:
+    entities:
+      - climate.heater_thermostat
+      - homeassistant.turn_on # needed for thermostat/hygrostat switch state changes to show up in the graph
+      - homeassistant.turn_off # needed for thermostat/hygrostat switch state changes to show up in the graph
+      - input_boolean.heater_thermostat_switch
