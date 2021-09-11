@@ -28,7 +28,7 @@ for entity_id_ in entity_id_list :
         elif (dependent_by_parameter
                 or entity_state.state == dependent_state.state and forced) :
             if condition :
-                hass.states.set(dependent_entity_id, dependent_state.state, dependent_state.attributes, force_update=True)
+                hass.states.set(dependent_entity_id, dependent_state.state, dependent_state.attributes.copy(), force_update=True)
         elif entity_state.state != dependent_state.state and condition :
             if dependent_state.domain == "input_select" :
                 hass.services.call("input_select", "select_option", {
